@@ -1,43 +1,85 @@
 <?php
+
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
+use Illuminate\Http\Request; // <-- Pastikan ini ada
+use App\Models\Berita;
 
 class BeritaController extends Controller
 {
     /**
-     * Sediakan data kegiatan terbaru untuk LandingPage.
+     * Tampilkan daftar berita dengan paginasi dan pencarian.
      */
-    public function getKegiatanTerbaru()
-{
-    $dataPalsu = [
-        [
-            'id' => 1,
-            'judul' => 'Workshop Coding untuk Anak',
-            'tanggal_kegiatan' => '2025-12-15',
-            'deskripsi_singkat' => 'Anak-anak belajar dasar-dasar coding',
-            'gambar_url' => asset('images/hero.jpg'),
-        ],
-        [
-            'id' => 2,
-            'judul' => 'Kelas Bahasa Interaktif',
-            'tanggal_kegiatan' => '2025-12-12',
-            'deskripsi_singkat' => 'Sesi pembelajaran bahasa Inggris',
-            'gambar_url' => asset('images/dokumentasi2.jpg'),
-        ],
-        [
-            'id' => 3,
-            'judul' => 'Perpustakaan Mini Dibuka',
-            'tanggal_kegiatan' => '2025-12-31',
-            'deskripsi_singkat' => 'Terminal Pintar membuka perpustakaan',
-            'gambar_url' => asset('images/dokumentasi.jpg'),
-        ],
-    ];
+    public function index(Request $request)
+    {
+        $query = Berita::query();
 
+        // Cek jika ada parameter 'search'
+        if ($request->has('search')) {
+            $search = $request->input('search');
+            $query->where(function($q) use ($search) {
+                $q->where('id', 'like', "%{$search}%")
+                  ->orWhere('judul', 'like', "%{$search}%");
+            });
+        }
+        
+        // Muat relasi penulis (jika diperlukan di masa depan)
+        // $query->with('penulis');
 
-        // Kembalikan data sebagai JSON
-        return response()->json($dataPalsu);
+        return response()->json($query->latest()->paginate(15));
     }
-    
+
+    /**
+     * Simpan berita baru.
+     */
+    public function store(Request $request)
+    {
+        $data = $request->validate([
+            'judul' => 'required|string',
+            'konten' => 'required|string',
+            'penulis_id' => 'required|integer|exists:users,id',
+            'gambar' => 'nullable|string'
+        ]);
+
+        $berita = Berita::create($data);
+
+        return response()->json(['message' => 'Berita created', 'berita' => $berita], 201);
+    }
+
+    /**
+     * Ambil data statistik untuk kartu.
+     */
+    public function getStats()
+    {
+        $totalBerita = Berita::count();
+
+        // Logika Fallback: Jika tidak ada berita, tampilkan data dummy dari gambar.
+        if ($totalBerita == 0) {
+            return response()->json([
+                'total_foto' => 57
+            ]);
+        }
+
+        // Logika Asli: Hitung berita yang memiliki gambar
+        // Asumsi: 'gambar' tidak null/kosong jika ada foto.
+        $totalFoto = Berita::whereNotNull('gambar')
+                           ->where('gambar', '!=', '')
+                           ->count();
+
+        return response()->json([
+            'total_foto' => $totalFoto
+        ]);
+    }
+
+    /**
+     * Hapus data berita.
+     */
+    public function destroy($id)
+    {
+        $berita = Berita::findOrFail($id);
+        $berita->delete();
+
+        return response()->json(['message' => 'Berita deleted'], 200);
+    }
 }

@@ -13,6 +13,7 @@ class DatabaseSeeder extends Seeder
             RoleSeeder::class,
             UserSeeder::class,
             BeritaSeeder::class,
+            AdminUserSeeder::class,
             SiswaSeeder::class,
             JadwalSesiSeeder::class,
             MateriSeeder::class,

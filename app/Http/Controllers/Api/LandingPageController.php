@@ -4,8 +4,8 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use App\Models\Berita; // 👈 Impor model Berita
-use App\Models\User;   // 👈 Impor model User
+use App\Models\Berita; 
+use App\Models\User;   
 
 class LandingPageController extends Controller
 {

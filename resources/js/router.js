@@ -2,6 +2,11 @@
 
 import { createRouter, createWebHistory } from 'vue-router';
 import LandingPage from './Pages/LandingPage.vue';
+import AdminDashboard from './Pages/Admin/Dashboard.vue';
+import AdminUsers from './Pages/Admin/Users/Index.vue';
+import AdminStudents from './Pages/Admin/Students/Index.vue';
+import AdminBerita from './Pages/Admin/Berita/Index.vue';
+// import LoginPage from './Pages/LoginPage.vue'; (Nanti)
 import LoginPage from './Pages/LoginPage.vue'; 
 import AuthenticatedLayout from './layouts/AuthenticatedLayout.vue'; 
 import DashboardOrangTua from './Pages/DashboardOrangTua.vue';
@@ -15,6 +20,26 @@ const routes = [
         component: LandingPage 
     },
     {
+        path: '/admin',
+        name: 'admin.dashboard',
+        component: AdminDashboard,
+    },
+    {
+        path: '/admin/users',
+        name: 'admin.users',
+        component: AdminUsers,
+    },
+    {
+        path: '/admin/students',
+        name: 'admin.students',
+        component: AdminStudents,
+    },
+    {
+        path: '/admin/berita',
+        name: 'admin.berita',
+        component: AdminBerita,
+    },
+    // { path: '/login', component: LoginPage },
         path: '/login',
         name: 'login',
         component: LoginPage,
