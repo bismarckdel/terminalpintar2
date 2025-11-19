@@ -6,11 +6,10 @@
     <title>Terminal Pintar</title>
     
     @vite('resources/css/app.css') 
+    @vite('resources/js/app.js') 
+    @inertiaHead
 </head>
 <body>
-    
-    <div id="app"></div>
-
-    @vite('resources/js/app.js') 
+    @inertia
 </body>
 </html>

@@ -2,46 +2,54 @@
 
 namespace App\Models;
 
-// 1. Pastikan baris ini ada!
 use Laravel\Sanctum\HasApiTokens; 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes; // <-- 1. Tambahkan ini (sesuai DDL)
+use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
 {
-    // 2. Pastikan HasApiTokens ada di dalam array use ini!
-    use HasApiTokens, HasFactory, Notifiable; 
+    // 2. Tambahkan SoftDeletes
+    use HasApiTokens, HasFactory, Notifiable, SoftDeletes, HasRoles; 
 
+    protected $table = 'users'; // <-- 3. Tentukan nama tabel
     protected $fillable = [
         'nama',
         'email',
         'password',
-        'role_id',
     ];
 
-    protected $hidden = [
-        'password',
-        'remember_token',
-    ];
+    // public function role(): BelongsTo
+    // {
+    //     return $this->belongsTo(Role::class, 'role_id');
+    // }
 
-    protected function casts(): array
-    {
-        return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-        ];
-    }
+    // public function berita(): HasMany // Relasi "mempublikasikan"
+    // {
+    //     return $this->hasMany(Berita::class, 'penulis_id');
+    // }
+    
+    // public function siswa(): HasMany // Relasi "memiliki" (sebagai Orang Tua)
+    // {
+    //     return $this->hasMany(Siswa::class, 'orang_tua_id');
+    // }
 
-    public function role(): BelongsTo
-    {
-        return $this->belongsTo(Role::class);
-    }
-
-    public function berita(): HasMany
-    {
-        return $this->hasMany(Berita::class, 'penulis_id');
-    }
+    // public function jadwalMengajar(): HasMany // Relasi "mengajar" (sebagai Guru)
+    // {
+    //     return $this->hasMany(JadwalSesi::class, 'guru_id');
+    // }
+    
+    // public function catatanGuru(): HasMany // Relasi "memberi catatan" (sebagai Guru)
+    // {
+    //     return $this->hasMany(CatatanGuru::class, 'guru_id');
+    // }
+    
+    // public function peminjaman(): HasMany // Relasi "meminjam"
+    // {
+    //     return $this->hasMany(Peminjaman::class, 'peminjam_id');
+    // }
 }

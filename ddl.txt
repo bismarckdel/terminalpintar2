@@ -1,0 +1,109 @@
+-- Tabel untuk peran pengguna
+CREATE TABLE `roles` (
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  `nama_role` VARCHAR(50) NOT NULL UNIQUE
+) ENGINE=InnoDB;
+ 
+-- Tabel utama untuk semua pengguna-
+CREATE TABLE `users` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  `nama` VARCHAR(255) NOT NULL,
+  `email` VARCHAR(255) NOT NULL UNIQUE,
+  `password` VARCHAR(255) NOT NULL,
+  `role_id` INT UNSIGNED NOT NULL,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted_at` TIMESTAMP NULL,
+  CONSTRAINT `fk_users_role` FOREIGN KEY (`role_id`) REFERENCES `roles` (`id`)
+) ENGINE=InnoDB;
+ 
+-- Tabel data siswa
+CREATE TABLE `siswa` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  `nama_lengkap` VARCHAR(255) NOT NULL,
+  `status` ENUM('Aktif', 'Nonaktif') NOT NULL DEFAULT 'Aktif',
+  `orang_tua_id` BIGINT UNSIGNED NOT NULL,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted_at` TIMESTAMP NULL,
+  CONSTRAINT `fk_siswa_orang_tua` FOREIGN KEY (`orang_tua_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB;
+ 
+-- Tabel berita & galeri
+CREATE TABLE `berita` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  `judul` VARCHAR(255) NOT NULL,
+  `konten` TEXT NOT NULL,
+  `gambar` VARCHAR(255) NULL,
+  `penulis_id` BIGINT UNSIGNED NOT NULL,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT `fk_berita_penulis` FOREIGN KEY (`penulis_id`) REFERENCES `users` (`id`)
+) ENGINE=InnoDB;
+ 
+-- Tabel jadwal sesi pembelajaran
+CREATE TABLE `jadwal_sesi` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  `topik` VARCHAR(255) NOT NULL,
+  `deskripsi` TEXT NULL,
+  `waktu_mulai` DATETIME NOT NULL,
+  `guru_id` BIGINT UNSIGNED NOT NULL,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT `fk_jadwal_sesi_guru` FOREIGN KEY (`guru_id`) REFERENCES `users` (`id`)
+) ENGINE=InnoDB;
+ -- !! PENAMBAHAN TABEL BARU !!
+-- Tabel untuk materi pembelajaran
+CREATE TABLE `materi` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  `judul` VARCHAR(255) NOT NULL,
+  `file_path` VARCHAR(255) NULL,
+  `link_url` VARCHAR(255) NULL,
+  `sesi_id` BIGINT UNSIGNED NOT NULL,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT `fk_materi_sesi` FOREIGN KEY (`sesi_id`) REFERENCES `jadwal_sesi` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- Tabel kehadiran (junction table)
+CREATE TABLE `kehadiran` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  `sesi_id` BIGINT UNSIGNED NOT NULL,
+  `siswa_id` BIGINT UNSIGNED NOT NULL,
+  `status` ENUM('Hadir', 'Izin', 'Sakit', 'Alpha') NOT NULL,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY `uk_kehadiran` (`sesi_id`, `siswa_id`),
+  CONSTRAINT `fk_kehadiran_sesi` FOREIGN KEY (`sesi_id`) REFERENCES `jadwal_sesi` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_kehadiran_siswa` FOREIGN KEY (`siswa_id`) REFERENCES `siswa` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB;
+ 
+-- Tabel catatan guru
+CREATE TABLE `catatan_guru` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  `siswa_id` BIGINT UNSIGNED NOT NULL,
+  `guru_id` BIGINT UNSIGNED NOT NULL,
+  `catatan` TEXT NOT NULL,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT `fk_catatan_siswa` FOREIGN KEY (`siswa_id`) REFERENCES `siswa` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_catatan_guru` FOREIGN KEY (`guru_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB;
+ 
+-- Tabel katalog buku
+CREATE TABLE `buku` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  `judul` VARCHAR(255) NOT NULL,
+  `kategori` VARCHAR(100) NULL,
+  `status` ENUM('Tersedia', 'Dipinjam', 'Hilang') NOT NULL DEFAULT 'Tersedia',
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+ 
+-- Tabel peminjaman (junction table)
+CREATE TABLE `peminjaman` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  `buku_id` BIGINT UNSIGNED NOT NULL,
+  `peminjam_id` BIGINT UNSIGNED NOT NULL,
+  `tanggal_pinjam` DATE NOT NULL,
+  `tanggal_kembali` DATE NULL,
+  `status` ENUM('Dipinjam', 'Kembali') NOT NULL DEFAULT 'Dipinjam',
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT `fk_peminjaman_buku` FOREIGN KEY (`buku_id`) REFERENCES `buku` (`id`),
+  CONSTRAINT `fk_peminjaman_peminjam` FOREIGN KEY (`peminjam_id`) REFERENCES `users` (`id`)
+) ENGINE=InnoDB;
+
