@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\AdminController;
@@ -13,21 +14,40 @@ use App\Http\Controllers\PerpustakaanController;
 
 // Render Landing Page secara statis tanpa controller/props
 Route::get('/', function () {
+    // Redirect to dashboard if already logged in
+    if (Auth::check()) {
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+        if ($user->hasRole('admin')) {
+            return redirect('/dashboardadmin');
+        }
+        // Add more role redirects here for guru and orangtua
+    }
     return Inertia::render('LandingPage');
-})->name('landing');
-
-// Halaman Login
+})->name('landing'); // Halaman Login
 Route::get('/login', function () {
+    // Redirect to dashboard if already logged in
+    if (Auth::check()) {
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+        if ($user->hasRole('admin')) {
+            return redirect('/dashboardadmin');
+        }
+        // Add more role redirects here for guru and orangtua
+    }
     return Inertia::render('Auth/LoginPage');
 })->name('login');
 
 Route::post('/login', [AuthController::class, 'login']);
 
+// Logout - accessible for all authenticated users
+Route::middleware(['auth'])->group(function () {
+    Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+});
+
 // --- Rute Admin (Contoh Group) ---
 // Batasi hanya untuk authenticated users dengan role 'admin'
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
-    // Logout
-    Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
     
     // Kelola Pengguna - Resource Routes
     Route::get('/user', [UserController::class, 'index'])->name('admin.user.index');
@@ -43,8 +63,6 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
     Route::post('/siswa', [SiswaController::class, 'store'])->name('admin.siswa.store');
     Route::get('/siswa/{id}/edit', [SiswaController::class, 'edit'])->name('admin.siswa.edit');
     Route::post('/siswa/{id}/update', [SiswaController::class, 'update'])->name('admin.siswa.update');
-    Route::delete('/siswa/{id}', [SiswaController::class, 'destroy'])->name('admin.siswa.destroy');
-    
     // Kelola Berita - Resource Routes
     Route::get('/berita', [BeritaController::class, 'index'])->name('admin.berita.index');
     Route::get('/berita/create', [BeritaController::class, 'create'])->name('admin.berita.create');

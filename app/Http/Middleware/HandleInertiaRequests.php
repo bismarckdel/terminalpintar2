@@ -48,6 +48,14 @@ class HandleInertiaRequests extends Middleware
                 // Atau kirim role user (opsional)
                 'roles' => $request->user() ? $request->user()->getRoleNames() : [],
             ],
+            
+            // Share flash messages ke semua halaman Inertia
+            'flash' => [
+                'success' => $request->session()->get('success'),
+                'error' => $request->session()->get('error'),
+                'warning' => $request->session()->get('warning'),
+                'info' => $request->session()->get('info'),
+            ],
         ];
     }
 }

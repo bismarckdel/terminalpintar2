@@ -5,6 +5,9 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
+use App\Models\Siswa;
+use App\Models\Berita;
+use App\Models\Buku;
 
 class AdminController extends Controller
 {
@@ -13,17 +16,18 @@ class AdminController extends Controller
      */
     public function dashboard()
     {
+        // Get real statistics from database
+        $totalSiswa = Siswa::count();
+        $totalBerita = Berita::count();
+        $koleksiBuku = Buku::count();
+
         return Inertia::render('Admin/DashboardAdmin', [
             'user' => Auth::user(),
             'stats' => [
-                'totalSiswa' => 128,
-                'siswaBaru' => 12,
-                'kelasAktif' => 8,
-                'kategoriKelas' => 3,
-                'artikelPublished' => 45,
-                'artikelBaru' => 5,
-                'koleksiBuku' => 245,
-                'kategoriKeb' => 15
+                'totalSiswa' => $totalSiswa,
+                'totalBerita' => $totalBerita,
+                'koleksiBuku' => $koleksiBuku,
+                'totalUsers' => \App\Models\User::count()
             ],
             'daftarAktivitas' => [
                 [

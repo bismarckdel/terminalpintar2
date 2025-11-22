@@ -110,12 +110,19 @@
               :class="{ 'border-red-500': form.errors.role }"
             >
               <option value="">Pilih Role</option>
-              <option v-for="roleItem in roles" :key="roleItem.id" :value="roleItem.name">
+              <option v-for="roleItem in filteredRoles" :key="roleItem.id" :value="roleItem.name">
                 {{ roleItem.name }}
               </option>
             </select>
             <p v-if="form.errors.role" class="mt-1 text-sm text-red-600">{{ form.errors.role }}</p>
             <p class="mt-1 text-xs text-gray-500">Pilih role untuk menentukan hak akses pengguna</p>
+          </div>
+
+          <!-- Info Orang Tua -->
+          <div class="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <p class="text-sm text-blue-700">
+              <strong>💡 Info:</strong> Akun dengan role <strong>Orang Tua</strong> hanya dapat dibuat melalui menu <strong>Kelola Siswa</strong> karena harus berelasi dengan data siswa.
+            </p>
           </div>
 
           <!-- Error Global -->
@@ -147,10 +154,16 @@
 
 <script setup>
 import { Head, Link, useForm } from '@inertiajs/vue3';
+import { computed } from 'vue';
 
 const props = defineProps({
   user: Object,
   roles: Array,
+});
+
+// Filter role orangtua karena harus dibuat melalui Kelola Siswa
+const filteredRoles = computed(() => {
+  return props.roles?.filter(role => role.name !== 'orangtua') || [];
 });
 
 const form = useForm({

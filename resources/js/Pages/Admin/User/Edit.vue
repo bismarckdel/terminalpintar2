@@ -88,16 +88,27 @@
               v-model="form.role"
               id="role" 
               required
+              :disabled="isOrangtua"
               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-              :class="{ 'border-red-500': form.errors.role }"
+              :class="{ 'border-red-500': form.errors.role, 'bg-gray-100 cursor-not-allowed': isOrangtua }"
             >
               <option value="">Pilih Role</option>
-              <option v-for="roleItem in roles" :key="roleItem.id" :value="roleItem.name">
+              <option v-for="roleItem in filteredRoles" :key="roleItem.id" :value="roleItem.name">
                 {{ roleItem.name }}
               </option>
             </select>
             <p v-if="form.errors.role" class="mt-1 text-sm text-red-600">{{ form.errors.role }}</p>
             <p class="mt-1 text-xs text-gray-500">Pilih role untuk menentukan hak akses pengguna</p>
+            <p v-if="isOrangtua" class="mt-1 text-xs text-amber-600">
+              ⚠️ Role orang tua tidak dapat diubah karena berelasi dengan data siswa
+            </p>
+          </div>
+
+          <!-- Info Orang Tua -->
+          <div v-if="!isOrangtua" class="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <p class="text-sm text-blue-700">
+              <strong>💡 Info:</strong> Akun dengan role <strong>Orang Tua</strong> hanya dapat dibuat melalui menu <strong>Kelola Siswa</strong> karena harus berelasi dengan data siswa.
+            </p>
           </div>
 
           <!-- Info Password -->
@@ -136,11 +147,26 @@
 
 <script setup>
 import { Head, Link, useForm } from '@inertiajs/vue3';
+import { computed } from 'vue';
 
 const props = defineProps({
   user: Object,
   editUser: Object,
   roles: Array,
+});
+
+// Cek apakah user yang diedit adalah orangtua
+const isOrangtua = computed(() => {
+  return props.editUser.roles?.[0]?.name === 'orangtua';
+});
+
+// Filter role orangtua karena harus dibuat melalui Kelola Siswa
+// Kecuali jika user yang diedit memang sudah orangtua (untuk tetap ditampilkan)
+const filteredRoles = computed(() => {
+  if (isOrangtua.value) {
+    return props.roles || [];
+  }
+  return props.roles?.filter(role => role.name !== 'orangtua') || [];
 });
 
 // Initialize form dengan data user yang ada

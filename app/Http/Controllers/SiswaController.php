@@ -24,11 +24,19 @@ class SiswaController extends Controller
                 return $query->where('nama_lengkap', 'LIKE', "%{$keyword}%");
             })
             ->latest()
-            ->get();
+            ->paginate(10);
+        
+        // Calculate statistics
+        $stats = [
+            'total' => Siswa::count(),
+            'aktif' => Siswa::where('status', 'Aktif')->count(),
+            'nonaktif' => Siswa::where('status', 'Nonaktif')->count(),
+        ];
         
         return Inertia::render('Admin/KelolaSiswa', [
             'user' => Auth::user(),
             'siswa' => $siswa,
+            'stats' => $stats,
             'filters' => [
                 'search' => $keyword,
             ],
@@ -170,11 +178,7 @@ class SiswaController extends Controller
     }
 
     /**
-     * Remove the specified siswa
+     * Siswa tidak dapat dihapus untuk menjaga integritas data
+     * Gunakan status 'Nonaktif' untuk menonaktifkan siswa
      */
-    public function destroy($id)
-    {
-        // Delete logic nanti
-        return redirect()->route('admin.siswa.index');
-    }
 }

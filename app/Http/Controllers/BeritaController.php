@@ -23,11 +23,18 @@ class BeritaController extends Controller
                             ->orWhere('konten', 'LIKE', "%{$keyword}%");
             })
             ->latest()
-            ->get();
+            ->paginate(10);
+        
+        // Calculate statistics
+        $stats = [
+            'totalBerita' => Berita::count(),
+            'totalFoto' => Berita::whereNotNull('gambar')->count(),
+        ];
         
         return Inertia::render('Admin/KelolaBerita', [
             'user' => Auth::user(),
             'berita' => $berita,
+            'stats' => $stats,
             'filters' => [
                 'search' => $keyword,
             ],
@@ -160,8 +167,12 @@ class BeritaController extends Controller
                 Storage::disk('public')->delete($berita->gambar);
             }
 
-            // Hapus data berita dari database
-            $berita->delete();
+            // Gunakan forceDelete jika model mendukung soft delete, jika tidak fallback ke delete biasa
+            if (method_exists($berita, 'forceDelete')) {
+                $berita->forceDelete();
+            } else {
+                $berita->delete();
+            }
 
             return redirect()->route('admin.berita.index')
                 ->with('success', 'Berita berhasil dihapus!');

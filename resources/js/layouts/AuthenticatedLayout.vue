@@ -1,276 +1,290 @@
+﻿<script setup>
+import { ref, computed } from "vue";
+import { Link, router, usePage } from "@inertiajs/vue3";
+import FlashMessage from "@/components/FlashMessage.vue";
+import {
+  Bars3Icon,
+  XMarkIcon,
+  BellIcon,
+  UserCircleIcon,
+  ArrowRightOnRectangleIcon,
+  ExclamationCircleIcon
+} from "@heroicons/vue/24/outline";
+
+const page = usePage();
+
+const showingNavigationDropdown = ref(false);
+const showLogoutModal = ref(false);
+const isProfileOpen = ref(false);
+
+const userName = computed(() => page.props.auth?.user?.nama || "Pengguna");
+const userInitial = computed(() => userName.value.charAt(0).toUpperCase());
+const userRoles = computed(() => {
+  const roles = page.props.auth?.roles ?? [];
+
+  if (Array.isArray(roles)) {
+    return roles.map((role) => {
+      if (typeof role === "string") {
+        return role;
+      }
+      if (role && typeof role === "object") {
+        return role.name || role.title || "";
+      }
+      return "";
+    });
+  }
+
+  if (typeof roles === "string") {
+    return [roles];
+  }
+
+  if (roles && typeof roles === "object") {
+    const values = Object.values(roles).flat();
+    return values.map((value) => {
+      if (typeof value === "string") {
+        return value;
+      }
+      if (value && typeof value === "object") {
+        return value.name || value.title || "";
+      }
+      return "";
+    });
+  }
+
+  return [];
+});
+
+const hasRole = (role) =>
+  userRoles.value.some((assignedRole) =>
+    String(assignedRole || "").toLowerCase() === role.toLowerCase()
+  );
+
+const closeMenus = () => {
+  showingNavigationDropdown.value = false;
+  isProfileOpen.value = false;
+};
+
+const toggleProfile = () => {
+  isProfileOpen.value = !isProfileOpen.value;
+};
+
+const handleLogout = () => {
+  router.post("/logout", {}, {
+    onFinish: () => {
+      showLogoutModal.value = false;
+      closeMenus();
+    }
+  });
+};
+
+const adminLinks = [
+  {
+    label: "Dashboard",
+    href: "/dashboardadmin",
+    match: ["/dashboardadmin"]
+  },
+  {
+    label: "Kelola Pengguna",
+    href: "/admin/user",
+    match: ["/admin/user"]
+  },
+  {
+    label: "Kelola Siswa",
+    href: "/admin/siswa",
+    match: ["/admin/siswa"]
+  },
+  {
+    label: "Berita & Dokumentasi",
+    href: "/admin/berita",
+    match: ["/admin/berita"]
+  },
+  {
+    label: "Kelola Perpustakaan",
+    href: "/admin/perpustakaan",
+    match: ["/admin/perpustakaan"]
+  }
+];
+
+const isLinkActive = (link) =>
+  link.match.some((segment) => page.url.startsWith(segment));
+
+const navClasses = (isActive) =>
+  isActive
+    ? "inline-flex items-center px-1 pt-1 border-b-4 border-[#78AE4E] text-sm font-semibold text-[#78AE4E] focus:outline-none transition duration-150 ease-in-out h-full"
+    : "inline-flex items-center px-1 pt-1 border-b-4 border-transparent text-sm font-semibold text-gray-900 hover:text-[#78AE4E] hover:border-[#78AE4E] focus:outline-none transition duration-150 ease-in-out h-full";
+
+</script>
+
 <template>
-  <div class="flex h-screen bg-gray-100">
+  <div class="min-h-screen bg-gray-100 font-sans">
+    <FlashMessage />
 
-    <aside class="w-64 shrink-0 bg-white shadow-lg">
-      <div class="flex flex-col h-full">
+    <nav class="bg-white border-b border-gray-200 sticky top-0 z-40">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between h-16">
+          <div class="flex">
+            <div class="shrink-0 flex items-center">
+              <Link href="/">
+                <img class="block h-9 w-auto" src="C:\laragon\www\TerminalPintar\public\images\Logo.png" alt="Terminal Pintar" />
+              </Link>
+              <span class="ml-2 text-lg font-bold text-[#78AE4E] hidden md:block">Terminal Pintar</span>
+            </div>
 
-        <div class="h-20 flex items-center justify-center border-b">
-          <img class="h-10 w-auto" src="/public/images/Logo.png" alt="Terminal Pintar Logo">
-          <span class="ml-2 text-xl font-bold text-[#78AE4E]">Terminal Pintar</span>
+            <div class="hidden space-x-8 sm:-my-px sm:ml-10 sm:flex">
+              <template v-if="hasRole('Admin')">
+                <Link
+                  v-for="link in adminLinks"
+                  :key="link.href"
+                  :href="link.href"
+                  :class="navClasses(isLinkActive(link))"
+                >
+                  {{ link.label }}
+                </Link>
+              </template>
+            </div>
+          </div>
+
+          <div class="hidden sm:flex sm:items-center sm:ml-6 gap-3">
+            <button
+              class="p-1 rounded-full text-gray-400 hover:text-gray-500 focus:outline-none focus:ring"
+              aria-label="Notifikasi"
+            >
+              <BellIcon class="h-6 w-6" />
+            </button>
+
+            <div class="relative ml-3">
+              <div class="flex items-center gap-3 cursor-pointer" @click="toggleProfile">
+                <div class="text-right hidden md:block">
+                  <div class="text-sm font-medium text-gray-800">{{ userName }}</div>
+                  <div class="text-xs text-gray-500">{{ userRoles[0] || 'User' }}</div>
+                </div>
+                <div
+                  class="h-9 w-9 rounded-full bg-green-100 flex items-center justify-center text-[#78AE4E] font-bold border border-green-200"
+                >
+                  {{ userInitial }}
+                </div>
+              </div>
+
+              <div
+                v-if="isProfileOpen"
+                class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 z-50"
+              >
+                <div class="px-4 py-3">
+                  <p class="text-sm font-medium text-gray-800">{{ userName }}</p>
+                  <p class="text-xs text-gray-500">{{ userRoles[0] || 'User' }}</p>
+                </div>
+                <button
+                  type="button"
+                  class="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
+                  @click="showLogoutModal = true"
+                >
+                  <ArrowRightOnRectangleIcon class="w-4 h-4" />
+                  Keluar
+                </button>
+              </div>
+
+              <div
+                v-if="isProfileOpen"
+                class="fixed inset-0 z-40"
+                @click="isProfileOpen = false"
+              ></div>
+            </div>
+          </div>
+
+          <div class="-mr-2 flex items-center sm:hidden">
+            <button
+              type="button"
+              @click="showingNavigationDropdown = !showingNavigationDropdown"
+              class="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring"
+              aria-label="Toggle navigation"
+            >
+              <Bars3Icon v-if="!showingNavigationDropdown" class="h-6 w-6" />
+              <XMarkIcon v-else class="h-6 w-6" />
+            </button>
+          </div>
         </div>
-
-        <nav class="flex-1 overflow-y-auto p-4 space-y-2">
-
-          <div>
-            <button @click="toggleMenu('menuUtama')"
-              class="w-full flex justify-between items-center text-left text-gray-600 hover:bg-gray-50 p-2 rounded-lg">
-              <span class="flex items-center">
-                <Bars3Icon class="w-5 h-5 mr-3" />
-                <span class="font-medium">Menu Utama</span>
-              </span>
-              <ChevronDownIcon :class="menus.menuUtama ? 'rotate-180' : ''" class="w-4 h-4 transition-transform" />
-            </button>
-
-            <div v-if="menus.menuUtama" class="mt-1 pl-6 space-y-1">
-              <router-link to="/dashboard" class="flex items-center text-gray-600 hover:text-green-600 p-2 rounded-lg"
-                active-class="bg-green-100 text-[#78AE4E] font-semibold">
-                <HomeIcon class="w-5 h-5 mr-3" />
-                Beranda
-              </router-link>
-            </div>
-          </div>
-
-          <div>
-            <button @click="toggleMenu('pengawasan')"
-              class="w-full flex justify-between items-center text-left text-gray-600 hover:bg-gray-50 p-2 rounded-lg">
-              <span class="flex items-center">
-                <MagnifyingGlassCircleIcon class="w-5 h-5 mr-3" />
-                <span class="font-medium">Pengawasan</span>
-              </span>
-              <ChevronDownIcon :class="menus.pengawasan ? 'rotate-180' : ''" class="w-4 h-4 transition-transform" />
-            </button>
-
-            <div v-if="menus.pengawasan" class="mt-1 pl-6 space-y-1">
-              <router-link to="/dashboard-jadwal"
-                class="flex items-center text-gray-600 hover:text-green-600 p-2 rounded-lg"
-                active-class="bg-green-100 text-[#78AE4E] font-semibold">
-                <CalendarIcon class="w-5 h-5 mr-3" />
-                Jadwal
-              </router-link>
-              <router-link to="/dashboard-catatan"
-                class="flex items-center text-gray-600 hover:text-green-600 p-2 rounded-lg"
-                active-class="bg-green-100 text-[#78AE4E] font-semibold">
-                <DocumentTextIcon class="w-5 h-5 mr-3" />
-                Catatan Guru
-              </router-link>
-            </div>
-          </div>
-
-        </nav>
       </div>
-    </aside>
 
-    <div class="flex-1 flex flex-col overflow-hidden">
-
-      <header class="h-20 bg-white border-b flex items-center justify-end px-6">
-        <div class="flex items-center space-x-4">
-
-          <div class="relative">
-
-            <button @click="isNotifOpen = !isNotifOpen" class="text-gray-500 hover:text-gray-700 relative notif-button">
-              <BellIcon class="w-6 h-6" />
-              <span class="absolute -top-1 -right-1 flex h-4 w-4">
-                <span
-                  class="relative inline-flex rounded-full h-4 w-4 bg-red-500 justify-center items-center text-white text-xs">
-                  {{ notifications.length }}
-                </span>
-              </span>
-            </button>
-
-            <transition enter-active-class="transition ease-out duration-100"
-              enter-from-class="transform opacity-0 scale-95" enter-to-class="transform opacity-100 scale-100"
-              leave-active-class="transition ease-in duration-75" leave-from-class="transform opacity-100 scale-100"
-              leave-to-class="transform opacity-0 scale-95">
-              <div v-if="isNotifOpen" ref="notifMenu"
-                class="absolute top-full right-0 mt-2 w-80 bg-white rounded-lg shadow-xl border z-50">
-                <div class="flex justify-between items-center p-4 border-b">
-                  <h3 class="text-lg font-semibold text-gray-900">Notifikasi</h3>
-                  <button class="text-sm text-[#78AE4E] font-medium hover:text-opacity-80">
-                    Tandai semua telah dibaca
-                  </button>
-                </div>
-
-                <div class="py-2 max-h-96 overflow-y-auto">
-                  <a v-for="notif in notifications" :key="notif.id" href="#"
-                    class="flex items-center px-4 py-3 hover:bg-gray-50">
-                    <div class="shrink-0">
-                      <div class="w-3 h-3 bg-green-500 rounded-full"></div>
-                    </div>
-                    <div class="ml-3 w-0 flex-1">
-                      <p class="text-sm font-medium text-gray-900">{{ notif.title }}</p>
-                      <p class="text-sm text-gray-600 truncate">{{ notif.body }}</p>
-                    </div>
-                  </a>
-
-                  <div v-if="notifications.length === 0" class="px-4 py-3 text-center text-gray-500">
-                    Tidak ada notifikasi baru.
-                  </div>
-                </div>
-
-              </div>
-            </transition>
-          </div>
-
-          <div class="relative">
-
-            <button @click="isProfileOpen = !isProfileOpen" class="text-gray-500 hover:text-gray-700 profile-button">
-              <UserCircleIcon class="w-8 h-8" />
-            </button>
-
-            <transition enter-active-class="transition ease-out duration-100"
-              enter-from-class="transform opacity-0 scale-95" enter-to-class="transform opacity-100 scale-100"
-              leave-active-class="transition ease-in duration-75" leave-from-class="transform opacity-100 scale-100"
-              leave-to-class="transform opacity-0 scale-95">
-              <div v-if="isProfileOpen" ref="profileMenu"
-                class="absolute top-full right-0 mt-3 w-80 bg-white rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.15)] border border-gray-200 z-50 p-6">
-
-                <!-- Avatar -->
-                <div class="flex flex-col items-center text-center">
-                  <UserCircleIcon class="w-16 h-16 text-gray-400 mb-3" />
-
-                  <div class="text-lg font-semibold text-gray-900">
-                    Ibu Rezky Nur Amalia
-                  </div>
-                  <div class="text-sm text-gray-500 mt-1">
-                    Amel@gmail.com
-                  </div>
-                </div>
-
-                <!-- Tombol Logout -->
-                <div class="mt-6">
-                  <button @click="confirmLogout"
-                    class="w-full py-2.5 border border-red-400 text-red-500 rounded-lg hover:bg-red-50 transition font-medium">
-                    Keluar
-                  </button>
-                </div>
-
-              </div>
-            </transition>
-
-          </div>
-
+      <div :class="{ block: showingNavigationDropdown, hidden: !showingNavigationDropdown }" class="sm:hidden">
+        <div class="pt-2 pb-3 space-y-1">
+          <template v-if="hasRole('Admin')">
+            <Link
+              v-for="link in adminLinks"
+              :key="`mobile-${link.href}`"
+              :href="link.href"
+              class="block w-full pl-3 pr-4 py-2 border-l-4 text-base font-medium transition duration-150 ease-in-out"
+              :class="
+                isLinkActive(link)
+                  ? 'border-[#78AE4E] text-[#78AE4E] bg-green-50'
+                  : 'border-transparent text-gray-600 hover:text-[#78AE4E] hover:bg-green-50 hover:border-[#78AE4E]'
+              "
+              @click="showingNavigationDropdown = false"
+            >
+              {{ link.label }}
+            </Link>
+          </template>
         </div>
 
-      </header>
+        <div class="pt-4 pb-1 border-t border-gray-200">
+          <div class="px-4">
+            <div class="font-medium text-base text-gray-800">{{ userName }}</div>
+            <div class="font-medium text-sm text-gray-500">{{ userRoles[0] || 'User' }}</div>
+          </div>
+          <div class="mt-3 space-y-1">
+            <button
+              type="button"
+              class="block w-full text-left px-4 py-2 text-base font-medium text-red-600 hover:text-red-800 hover:bg-gray-100"
+              @click="() => {
+                showLogoutModal.value = true;
+                showingNavigationDropdown.value = false;
+              }"
+            >
+              Keluar
+            </button>
+          </div>
+        </div>
+      </div>
+    </nav>
 
-      <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50">
-        <router-view></router-view>
-      </main>
-    </div>
-
+    <main>
+      <div class="py-6">
+        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+          <slot />
+        </div>
+      </div>
+    </main>
   </div>
-  <div v-if="showLogoutModal"
-    class="fixed inset-0 z-60 flex items-center justify-center bg-black/40 backdrop-blur-sm transition-opacity">
+
+  <div
+    v-if="showLogoutModal"
+    class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+  >
     <div class="bg-white rounded-xl shadow-2xl w-80 p-6 transform transition-all scale-100">
       <div class="flex justify-center mb-4">
-        <ExclamationCircleIcon class="w-20 h-20 text-red-500" />
+        <div class="p-3 bg-red-100 rounded-full">
+          <ExclamationCircleIcon class="w-8 h-8 text-red-500" />
+        </div>
       </div>
-      <h3 class="text-xl font-bold text-gray-900 text-center mb-6">
-        Yakin ingin keluar?
-      </h3>
-      <div class="flex justify-center gap-4">
-        <button @click="showLogoutModal = false"
-          class="px-6 py-2 rounded-lg bg-blue-100 text-blue-600 font-semibold hover:bg-blue-200 transition-colors">
-          Tidak
+      <h3 class="text-xl font-bold text-gray-900 text-center mb-2">Konfirmasi Keluar</h3>
+      <p class="text-center text-gray-500 text-sm mb-6">Apakah Anda yakin ingin mengakhiri sesi ini?</p>
+
+      <div class="flex justify-center gap-3">
+        <button
+          type="button"
+          class="flex-1 px-4 py-2 rounded-lg border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 transition-colors"
+          @click="showLogoutModal = false"
+        >
+          Batal
         </button>
-        <button @click="handleLogout"
-          class="px-8 py-2 rounded-lg bg-red-400 text-white font-semibold hover:bg-red-500 transition-colors shadow-md">
-          Ya
+        <button
+          type="button"
+          class="flex-1 px-4 py-2 rounded-lg bg-red-500 text-white font-medium hover:bg-red-600 transition-colors shadow-md"
+          @click="handleLogout"
+        >
+          Ya, Keluar
         </button>
       </div>
     </div>
   </div>
 </template>
 
-<script setup>
-import { reactive } from 'vue';
-import { ref, onMounted, onUnmounted } from 'vue';
-import { useRouter } from 'vue-router';
-
-// Impor ikon dari Heroicons (pastikan Anda sudah npm install @heroicons/vue)
-import {
-  Bars3Icon,
-  HomeIcon,
-  MagnifyingGlassCircleIcon,
-  CalendarIcon,
-  DocumentTextIcon,
-  BellIcon,
-  UserCircleIcon,
-  ChevronDownIcon,
-  ExclamationCircleIcon
-} from '@heroicons/vue/24/outline';
-
-const isProfileOpen = ref(false);
-const profileMenu = ref(null);
-const isNotifOpen = ref(false);
-const notifMenu = ref(null);
-const router = useRouter();
-// State untuk mengontrol menu dropdown
-const menus = reactive({
-  menuUtama: true, // Default terbuka
-  pengawasan: true // Default terbuka
-});
-
-const handleClickOutside = (event) => {
-  if (profileMenu.value && !profileMenu.value.contains(event.target)) {
-    // Cek jika target BUKAN tombol profil itu sendiri
-    if (!event.target.closest('.profile-button')) {
-      isProfileOpen.value = false;
-    }
-  }
-  if (notifMenu.value && !notifMenu.value.contains(event.target)) {
-    if (!event.target.closest('.notif-button')) {
-      isNotifOpen.value = false;
-    }
-  }
-};
-
-const notifications = ref([
-  { id: 1, title: 'Pesan Baru', body: 'Pesan Baru dari Ibu Ica, Guru Bahasa Inggris' },
-  { id: 2, title: 'Pesan Baru', body: 'Pesan Baru dari Bapak Fakhri, Guru Bahasa Jepang' },
-]);
-
-document.addEventListener('click', handleClickOutside);
-
-
-onUnmounted(() => {
-  document.removeEventListener('click', handleClickOutside);
-
-});
-
-const showLogoutModal = ref(false);
-
-const handleLogout = async () => {
-  try {
-    await axios.post('/api/logout');
-  } catch (error) {
-    console.error('Logout error:', error);
-  } finally {
-    localStorage.removeItem('token');
-    delete axios.defaults.headers.common['Authorization'];
-    router.push('/login');
-  }
-};
-
-const toggleMenu = (menu) => {
-  menus[menu] = !menus[menu];
-};
-
-const confirmLogout = () => {
-  isProfileOpen.value = false; // Tutup dropdown profil
-  showLogoutModal.value = true; // Buka modal konfirmasi
-};
-
-</script>
-
-<style scoped>
-/* Menambahkan style khusus untuk active-class router-link */
-.router-link-exact-active {
-  background-color: #f0fdf4;
-  /* bg-green-50 */
-  color: #16a34a;
-  /* text-green-700 */
-  font-weight: 600;
-  /* font-semibold */
-}
-</style>

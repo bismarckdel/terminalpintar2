@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use App\Models\User;
 use Spatie\Permission\Models\Role;
@@ -18,16 +19,31 @@ class UserController extends Controller
     {
         $keyword = $request->input('search');
         
-        $users = User::with('roles')
-            ->when($keyword, function ($query, $keyword) {
-                return $query->where('nama', 'LIKE', "%{$keyword}%");
-            })
-            ->latest()
-            ->get();
+        $query = User::with('roles');
         
+        // Search filter
+        if ($keyword) {
+            $query->where('nama', 'LIKE', "%{$keyword}%");
+        }
+        
+        // Pagination: 10 items per page
+        $users = $query->latest()->paginate(10)->withQueryString();
+        
+        // Get statistics
+        $stats = [
+            'total' => User::count(),
+            'aktif' => User::count(), // Semua user dianggap aktif karena tidak ada kolom is_active
+            'adminGuru' => User::role(['admin', 'guru'])->count(),
+            'orangtua' => User::role('orangtua')->count(),
+        ];
+        
+        $roles = Role::all();
+
         return Inertia::render('Admin/KelolaPengguna', [
             'user' => Auth::user(),
             'users' => $users,
+            'stats' => $stats,
+            'roles' => $roles,
             'filters' => [
                 'search' => $keyword,
             ],
@@ -157,9 +173,7 @@ class UserController extends Controller
             
             // Prevent deleting own account
             if ($editUser->id === Auth::id()) {
-                return back()->withErrors([
-                    'error' => 'Tidak dapat menghapus akun Anda sendiri!'
-                ]);
+                return back()->with('error', 'Tidak dapat menghapus akun Anda sendiri!');
             }
 
             // Check if user has role 'orangtua' and has related siswa
@@ -167,21 +181,22 @@ class UserController extends Controller
                 $siswaTerkait = \App\Models\Siswa::where('orang_tua_id', $editUser->id)->count();
                 
                 if ($siswaTerkait > 0) {
-                    return back()->withErrors([
-                        'error' => "Tidak dapat menghapus akun orang tua ini karena masih memiliki {$siswaTerkait} siswa terkait. Hapus siswa terlebih dahulu!"
-                    ]);
+                    return back()->with('error', "Tidak dapat menghapus akun orang tua ini karena masih memiliki {$siswaTerkait} siswa terkait. Hapus siswa terlebih dahulu!");
                 }
             }
 
-            $editUser->delete();
+            DB::transaction(function () use ($editUser) {
+                // Lepas semua role sebelum menghapus permanen
+                $editUser->syncRoles([]);
+
+                $editUser->forceDelete();
+            });
 
             return redirect()->route('admin.user.index')
                 ->with('success', 'Pengguna berhasil dihapus!');
 
         } catch (\Exception $e) {
-            return back()->withErrors([
-                'error' => 'Gagal menghapus pengguna: ' . $e->getMessage()
-            ]);
+            return back()->with('error', 'Gagal menghapus pengguna: ' . $e->getMessage());
         }
     }
 }

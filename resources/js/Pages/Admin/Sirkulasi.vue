@@ -1,259 +1,523 @@
 <template>
-  <div class="min-h-screen bg-gray-100">
-    <Head title="Sirkulasi Perpustakaan - Admin" />
-    
-    <nav class="bg-white shadow-sm sticky top-0 z-50">
-      <div class="px-8 py-4 flex justify-between items-center">
-        <div class="flex items-center gap-3">
-          <div class="h-10 w-10 bg-green-500 rounded flex items-center justify-center">
-            <span class="text-white font-bold text-xs">TP</span>
-          </div>
-          <span class="text-2xl font-bold text-green-600">Terminal Pintar</span>
-        </div>
-        
-        <div class="flex items-center gap-8">
-          <Link href="/dashboardadmin" class="text-gray-600 hover:text-green-600 text-sm font-medium">Dashboard</Link>
-          <Link href="/admin/user" class="text-gray-600 hover:text-green-600 text-sm font-medium">Kelola Pengguna</Link>
-          <Link href="/admin/siswa" class="text-gray-600 hover:text-green-600 text-sm font-medium">Kelola Siswa</Link>
-          <Link href="/admin/berita" class="text-gray-600 hover:text-green-600 text-sm font-medium">Berita & Dokumentasi</Link>
-          <Link href="/admin/perpustakaan" class="text-green-600 text-sm font-bold border-b-2 border-green-600">Perpustakaan</Link>
-        </div>
+  <Head title="Sirkulasi Perpustakaan - Admin" />
 
-        <div class="flex items-center gap-4">
-          <div class="flex items-center gap-2">
-            <svg class="w-6 h-6 text-gray-600" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
-            </svg>
-            <div>
-              <p class="text-sm font-medium text-gray-800">{{ user?.nama || 'Admin User' }}</p>
-              <p class="text-xs text-gray-500">Administrator</p>
-            </div>
-          </div>
-          <Link href="/logout" method="post" as="button" class="text-sm text-red-600 hover:text-red-700 font-medium">
-            Logout
-          </Link>
-        </div>
+  <div class="space-y-8">
+    <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+      <div>
+        <Link
+          href="/admin/perpustakaan"
+          class="flex items-center gap-2 text-sm font-medium text-[#78AE4E] transition hover:text-green-700"
+        >
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0 7-7m-7 7h18" />
+          </svg>
+          Kembali ke Daftar Buku
+        </Link>
+        <h1 class="mt-3 text-4xl font-bold text-[#78AE4E]">Sirkulasi Perpustakaan</h1>
+        <p class="text-sm text-gray-600">Kelola peminjaman dan pengembalian buku</p>
       </div>
-    </nav>
+      <div class="flex flex-wrap gap-3">
+        <button
+          type="button"
+          @click="openPinjamModal"
+          :disabled="!hasAvailableBooks"
+          class="inline-flex items-center gap-2 rounded-lg px-5 py-3 font-medium text-white transition focus:outline-none focus:ring-2 focus:ring-offset-2"
+          :class="
+            hasAvailableBooks
+              ? 'bg-green-600 hover:bg-green-700 focus:ring-green-500'
+              : 'cursor-not-allowed bg-gray-300 focus:ring-0'
+          "
+        >
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+          </svg>
+          Catat Peminjaman
+        </button>
+        <button
+          type="button"
+          @click="openKembaliModal"
+          :disabled="!hasBorrowedBooks"
+          class="inline-flex items-center gap-2 rounded-lg px-5 py-3 font-medium text-white transition focus:outline-none focus:ring-2 focus:ring-offset-2"
+          :class="
+            hasBorrowedBooks
+              ? 'bg-blue-600 hover:bg-blue-700 focus:ring-blue-500'
+              : 'cursor-not-allowed bg-gray-300 focus:ring-0'
+          "
+        >
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 20V4m8 8H4" />
+          </svg>
+          Catat Pengembalian
+        </button>
+      </div>
+    </div>
 
-    <main class="p-8">
-      <div class="mb-8 flex justify-between items-center">
-        <div>
-          <Link href="/admin/perpustakaan" class="text-green-600 hover:text-green-700 flex items-center gap-2 mb-4">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
-            Kembali ke Daftar Buku
-          </Link>
-          <h1 class="text-4xl font-bold text-green-600 mb-2">Sirkulasi Perpustakaan</h1>
-          <p class="text-gray-600 text-sm">Kelola peminjaman dan pengembalian buku</p>
+    <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
+      <div class="rounded-lg bg-white p-6 shadow">
+        <p class="text-sm text-gray-600">Buku Tersedia</p>
+        <p class="mt-2 text-3xl font-bold text-green-600">{{ bukuTersedia?.length || 0 }}</p>
+      </div>
+      <div class="rounded-lg bg-white p-6 shadow">
+        <p class="text-sm text-gray-600">Sedang Dipinjam</p>
+        <p class="mt-2 text-3xl font-bold text-blue-600">{{ bukuDipinjam?.length || 0 }}</p>
+      </div>
+      <div class="rounded-lg bg-white p-6 shadow">
+        <p class="text-sm text-gray-600">Total Pengguna</p>
+        <p class="mt-2 text-3xl font-bold text-gray-700">{{ users?.length || 0 }}</p>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+      <div class="rounded-lg bg-white p-6 shadow-md">
+        <div class="flex items-start justify-between">
+          <div>
+            <h2 class="text-xl font-semibold text-gray-800">Peminjaman Buku</h2>
+            <p class="mt-1 text-sm text-gray-600">Catat peminjaman baru melalui modal yang tersedia.</p>
+          </div>
+          <div class="text-3xl">📤</div>
         </div>
+        <p class="mt-4 text-sm text-gray-600">
+          Gunakan tombol &ldquo;Catat Peminjaman&rdquo; untuk memilih buku dan peminjam. Berikut beberapa buku yang saat ini tersedia:
+        </p>
+        <ul v-if="topBukuTersedia.length" class="mt-4 space-y-2">
+          <li
+            v-for="buku in topBukuTersedia"
+            :key="buku.id"
+            class="rounded-lg border border-gray-100 px-4 py-3"
+          >
+            <p class="text-sm font-semibold text-gray-900">{{ buku.judul }}</p>
+            <p class="text-xs text-gray-500">{{ buku.kategori || 'Tanpa kategori' }}</p>
+          </li>
+        </ul>
+        <p v-else class="mt-4 text-sm text-yellow-600">
+          Tidak ada buku yang tersedia untuk dipinjam saat ini.
+        </p>
       </div>
-
-      <!-- Success Message -->
-      <div v-if="$page.props.flash?.success" class="mb-6 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded">
-        {{ $page.props.flash.success }}
-      </div>
-
-      <!-- Error Message -->
-      <div v-if="$page.props.flash?.error || $page.props.errors?.error" class="mb-6 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-        {{ $page.props.flash?.error || $page.props.errors?.error }}
-      </div>
-
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <!-- Form Peminjaman -->
-        <div class="bg-white rounded-lg shadow-md p-6">
-          <div class="flex items-center gap-3 mb-6">
-            <div class="text-3xl">📤</div>
-            <div>
-              <h2 class="text-2xl font-bold text-gray-800">Peminjaman Buku</h2>
-              <p class="text-sm text-gray-600">Catat peminjaman buku baru</p>
-            </div>
+      <div class="rounded-lg bg-white p-6 shadow-md">
+        <div class="flex items-start justify-between">
+          <div>
+            <h2 class="text-xl font-semibold text-gray-800">Pengembalian Buku</h2>
+            <p class="mt-1 text-sm text-gray-600">Tindak lanjuti pengembalian buku melalui modal pengembalian.</p>
           </div>
-
-          <form @submit.prevent="submitPeminjaman">
-            <div class="space-y-4">
-              <div>
-                <label for="buku_pinjam" class="block text-sm font-medium text-gray-700 mb-2">
-                  Pilih Buku <span class="text-red-500">*</span>
-                </label>
-                <select
-                  id="buku_pinjam"
-                  v-model="formPinjam.buku_id"
-                  class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                  :class="{ 'border-red-500': formPinjam.errors.buku_id }"
-                >
-                  <option value="">-- Pilih Buku --</option>
-                  <option v-for="buku in bukuTersedia" :key="buku.id" :value="buku.id">
-                    {{ buku.judul }} {{ buku.kategori ? `(${buku.kategori})` : '' }}
-                  </option>
-                </select>
-                <p v-if="formPinjam.errors.buku_id" class="mt-1 text-sm text-red-600">{{ formPinjam.errors.buku_id }}</p>
-                <p v-if="!bukuTersedia || bukuTersedia.length === 0" class="mt-1 text-sm text-yellow-600">
-                  Tidak ada buku yang tersedia untuk dipinjam
-                </p>
-              </div>
-
-              <div>
-                <label for="peminjam" class="block text-sm font-medium text-gray-700 mb-2">
-                  Peminjam <span class="text-red-500">*</span>
-                </label>
-                <select
-                  id="peminjam"
-                  v-model="formPinjam.peminjam_id"
-                  class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                  :class="{ 'border-red-500': formPinjam.errors.peminjam_id }"
-                >
-                  <option value="">-- Pilih Peminjam --</option>
-                  <option v-for="usr in users" :key="usr.id" :value="usr.id">
-                    {{ usr.nama }} ({{ usr.email }})
-                  </option>
-                </select>
-                <p v-if="formPinjam.errors.peminjam_id" class="mt-1 text-sm text-red-600">{{ formPinjam.errors.peminjam_id }}</p>
-              </div>
-
-              <div>
-                <label for="tanggal_pinjam" class="block text-sm font-medium text-gray-700 mb-2">
-                  Tanggal Pinjam <span class="text-red-500">*</span>
-                </label>
-                <input
-                  id="tanggal_pinjam"
-                  v-model="formPinjam.tanggal_pinjam"
-                  type="date"
-                  class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                  :class="{ 'border-red-500': formPinjam.errors.tanggal_pinjam }"
-                />
-                <p v-if="formPinjam.errors.tanggal_pinjam" class="mt-1 text-sm text-red-600">{{ formPinjam.errors.tanggal_pinjam }}</p>
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              :disabled="formPinjam.processing || !bukuTersedia || bukuTersedia.length === 0"
-              class="mt-6 w-full bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <span v-if="formPinjam.processing">Memproses...</span>
-              <span v-else>Catat Peminjaman</span>
-            </button>
-          </form>
+          <div class="text-3xl">📥</div>
         </div>
-
-        <!-- Form Pengembalian -->
-        <div class="bg-white rounded-lg shadow-md p-6">
-          <div class="flex items-center gap-3 mb-6">
-            <div class="text-3xl">📥</div>
-            <div>
-              <h2 class="text-2xl font-bold text-gray-800">Pengembalian Buku</h2>
-              <p class="text-sm text-gray-600">Catat pengembalian buku yang dipinjam</p>
-            </div>
-          </div>
-
-          <form @submit.prevent="submitPengembalian">
-            <div class="space-y-4">
-              <div>
-                <label for="buku_kembali" class="block text-sm font-medium text-gray-700 mb-2">
-                  Pilih Buku yang Dikembalikan <span class="text-red-500">*</span>
-                </label>
-                <select
-                  id="buku_kembali"
-                  v-model="formKembali.peminjaman_id"
-                  class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  :class="{ 'border-red-500': formKembali.errors.peminjaman_id }"
-                >
-                  <option value="">-- Pilih Buku --</option>
-                  <option 
-                    v-for="buku in bukuDipinjam" 
-                    :key="buku.id" 
-                    :value="buku.peminjaman?.[0]?.id"
-                  >
-                    {{ buku.judul }} - Peminjam: {{ buku.peminjaman?.[0]?.peminjam?.nama || 'N/A' }}
-                  </option>
-                </select>
-                <p v-if="formKembali.errors.peminjaman_id" class="mt-1 text-sm text-red-600">{{ formKembali.errors.peminjaman_id }}</p>
-                <p v-if="!bukuDipinjam || bukuDipinjam.length === 0" class="mt-1 text-sm text-yellow-600">
-                  Tidak ada buku yang sedang dipinjam
-                </p>
-              </div>
-
-              <div>
-                <label for="tanggal_kembali" class="block text-sm font-medium text-gray-700 mb-2">
-                  Tanggal Kembali <span class="text-red-500">*</span>
-                </label>
-                <input
-                  id="tanggal_kembali"
-                  v-model="formKembali.tanggal_kembali"
-                  type="date"
-                  class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  :class="{ 'border-red-500': formKembali.errors.tanggal_kembali }"
-                />
-                <p v-if="formKembali.errors.tanggal_kembali" class="mt-1 text-sm text-red-600">{{ formKembali.errors.tanggal_kembali }}</p>
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              :disabled="formKembali.processing || !bukuDipinjam || bukuDipinjam.length === 0"
-              class="mt-6 w-full bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <span v-if="formKembali.processing">Memproses...</span>
-              <span v-else>Catat Pengembalian</span>
-            </button>
-          </form>
-        </div>
+        <p class="mt-4 text-sm text-gray-600">
+          Gunakan tombol &ldquo;Catat Pengembalian&rdquo; untuk mencari buku yang sedang dipinjam. Berikut beberapa peminjaman aktif:
+        </p>
+        <ul v-if="topBukuDipinjam.length" class="mt-4 space-y-2">
+          <li
+            v-for="buku in topBukuDipinjam"
+            :key="buku.id"
+            class="rounded-lg border border-gray-100 px-4 py-3"
+          >
+            <p class="text-sm font-semibold text-gray-900">{{ buku.judul }}</p>
+            <p class="text-xs text-gray-500">Peminjam: {{ buku.peminjaman?.[0]?.peminjam?.nama || 'Tidak diketahui' }}</p>
+          </li>
+        </ul>
+        <p v-else class="mt-4 text-sm text-green-600">
+          Tidak ada buku yang perlu dikembalikan saat ini.
+        </p>
       </div>
-
-      <!-- Summary Section -->
-      <div class="mt-8 bg-white rounded-lg shadow-md p-6">
-        <h3 class="text-xl font-bold text-gray-800 mb-4">Ringkasan</h3>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div class="bg-green-50 p-4 rounded-lg">
-            <p class="text-sm text-gray-600">Buku Tersedia</p>
-            <p class="text-2xl font-bold text-green-600">{{ bukuTersedia?.length || 0 }}</p>
-          </div>
-          <div class="bg-blue-50 p-4 rounded-lg">
-            <p class="text-sm text-gray-600">Sedang Dipinjam</p>
-            <p class="text-2xl font-bold text-blue-600">{{ bukuDipinjam?.length || 0 }}</p>
-          </div>
-          <div class="bg-gray-50 p-4 rounded-lg">
-            <p class="text-sm text-gray-600">Total User</p>
-            <p class="text-2xl font-bold text-gray-600">{{ users?.length || 0 }}</p>
-          </div>
-        </div>
-      </div>
-    </main>
+    </div>
   </div>
+
+  <Modal
+    :show="showPinjamModal"
+    title="Catat Peminjaman Buku"
+    variant="success"
+    maxWidth="3xl"
+    @close="closePinjamModal"
+  >
+    <template #description>
+      Pilih buku yang tersedia serta peminjam untuk mencatat transaksi peminjaman baru.
+    </template>
+
+    <form @submit.prevent="submitPeminjaman" class="space-y-5">
+      <div class="grid grid-cols-1 gap-5 md:grid-cols-2">
+        <div>
+          <label for="buku_pinjam" class="mb-2 block text-sm font-medium text-gray-700">
+            Pilih Buku <span class="text-red-500">*</span>
+          </label>
+          <div class="relative">
+            <input
+              id="buku_pinjam"
+              v-model="searchBukuPinjam"
+              type="text"
+              placeholder="Cari judul buku..."
+              class="w-full rounded-lg border px-4 py-2 focus:border-transparent focus:ring-2 focus:ring-green-500"
+              :class="{ 'border-red-500': formPinjam.errors.buku_id }"
+              @focus="showBukuPinjamDropdown = true"
+            />
+            <div
+              v-if="showBukuPinjamDropdown && filteredBukuTersedia.length > 0"
+              class="absolute z-10 mt-1 max-h-60 w-full overflow-y-auto rounded-lg border bg-white shadow-lg"
+            >
+              <button
+                v-for="buku in filteredBukuTersedia"
+                :key="buku.id"
+                type="button"
+                @click="selectBukuPinjam(buku)"
+                class="w-full px-4 py-2 text-left hover:bg-gray-100 focus:bg-gray-100 focus:outline-none"
+              >
+                <div class="font-medium text-gray-900">{{ buku.judul }}</div>
+                <div class="text-sm text-gray-500">{{ buku.kategori ? `Kategori: ${buku.kategori}` : 'Tanpa Kategori' }}</div>
+              </button>
+            </div>
+            <div
+              v-if="showBukuPinjamDropdown && searchBukuPinjam && filteredBukuTersedia.length === 0"
+              class="absolute z-10 mt-1 w-full rounded-lg border bg-white p-3 text-center text-sm text-gray-500"
+            >
+              Tidak ada hasil yang cocok
+            </div>
+          </div>
+          <p v-if="formPinjam.errors.buku_id" class="mt-1 text-sm text-red-600">{{ formPinjam.errors.buku_id }}</p>
+          <p v-if="!hasAvailableBooks" class="mt-1 text-sm text-yellow-600">
+            Tidak ada buku yang tersedia untuk dipinjam.
+          </p>
+        </div>
+
+        <div>
+          <label for="peminjam" class="mb-2 block text-sm font-medium text-gray-700">
+            Peminjam <span class="text-red-500">*</span>
+          </label>
+          <div class="relative">
+            <input
+              id="peminjam"
+              v-model="searchPeminjam"
+              type="text"
+              placeholder="Cari nama peminjam..."
+              class="w-full rounded-lg border px-4 py-2 focus:border-transparent focus:ring-2 focus:ring-green-500"
+              :class="{ 'border-red-500': formPinjam.errors.peminjam_id }"
+              @focus="showPeminjamDropdown = true"
+            />
+            <div
+              v-if="showPeminjamDropdown && filteredUsers.length > 0"
+              class="absolute z-10 mt-1 max-h-60 w-full overflow-y-auto rounded-lg border bg-white shadow-lg"
+            >
+              <button
+                v-for="usr in filteredUsers"
+                :key="usr.id"
+                type="button"
+                @click="selectPeminjam(usr)"
+                class="w-full px-4 py-2 text-left hover:bg-gray-100 focus:bg-gray-100 focus:outline-none"
+              >
+                <div class="font-medium text-gray-900">{{ usr.nama }}</div>
+                <div class="text-sm text-gray-500">{{ usr.email }}</div>
+              </button>
+            </div>
+            <div
+              v-if="showPeminjamDropdown && searchPeminjam && filteredUsers.length === 0"
+              class="absolute z-10 mt-1 w-full rounded-lg border bg-white p-3 text-center text-sm text-gray-500"
+            >
+              Tidak ada hasil yang cocok
+            </div>
+          </div>
+          <p v-if="formPinjam.errors.peminjam_id" class="mt-1 text-sm text-red-600">{{ formPinjam.errors.peminjam_id }}</p>
+        </div>
+
+        <div>
+          <label for="tanggal_pinjam" class="mb-2 block text-sm font-medium text-gray-700">
+            Tanggal Pinjam <span class="text-red-500">*</span>
+          </label>
+          <input
+            id="tanggal_pinjam"
+            v-model="formPinjam.tanggal_pinjam"
+            type="date"
+            class="w-full rounded-lg border px-4 py-2 focus:border-transparent focus:ring-2 focus:ring-green-500"
+            :class="{ 'border-red-500': formPinjam.errors.tanggal_pinjam }"
+          />
+          <p v-if="formPinjam.errors.tanggal_pinjam" class="mt-1 text-sm text-red-600">{{ formPinjam.errors.tanggal_pinjam }}</p>
+        </div>
+      </div>
+
+      <div v-if="formPinjam.errors.error" class="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-600">
+        {{ formPinjam.errors.error }}
+      </div>
+
+      <div class="flex justify-end gap-3 border-t pt-4">
+        <button
+          type="button"
+          class="rounded-full border border-gray-300 px-5 py-2 text-gray-700 transition hover:bg-gray-50"
+          @click="closePinjamModal"
+          :disabled="formPinjam.processing"
+        >
+          Batal
+        </button>
+        <button
+          type="submit"
+          class="rounded-full bg-[#78AE4E] px-5 py-2 text-white transition hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50"
+          :disabled="formPinjam.processing || !hasAvailableBooks"
+        >
+          <span v-if="formPinjam.processing">Memproses...</span>
+          <span v-else>Catat Peminjaman</span>
+        </button>
+      </div>
+    </form>
+  </Modal>
+
+  <Modal
+    :show="showKembaliModal"
+    title="Catat Pengembalian Buku"
+    variant="primary"
+    maxWidth="3xl"
+    @close="closeKembaliModal"
+  >
+    <template #description>
+      Pilih buku yang sedang dipinjam untuk menyelesaikan proses pengembalian.
+    </template>
+
+    <form @submit.prevent="submitPengembalian" class="space-y-5">
+      <div class="grid grid-cols-1 gap-5 md:grid-cols-2">
+        <div>
+          <label for="buku_kembali" class="mb-2 block text-sm font-medium text-gray-700">
+            Pilih Buku yang Dikembalikan <span class="text-red-500">*</span>
+          </label>
+          <div class="relative">
+            <input
+              id="buku_kembali"
+              v-model="searchBuku"
+              type="text"
+              placeholder="Cari judul buku..."
+              class="w-full rounded-lg border px-4 py-2 focus:border-transparent focus:ring-2 focus:ring-blue-500"
+              :class="{ 'border-red-500': formKembali.errors.peminjaman_id }"
+              @focus="showBukuDropdown = true"
+            />
+            <div
+              v-if="showBukuDropdown && filteredBuku.length > 0"
+              class="absolute z-10 mt-1 max-h-60 w-full overflow-y-auto rounded-lg border bg-white shadow-lg"
+            >
+              <button
+                v-for="buku in filteredBuku"
+                :key="buku.id"
+                type="button"
+                @click="selectBuku(buku)"
+                class="w-full px-4 py-2 text-left hover:bg-gray-100 focus:bg-gray-100 focus:outline-none"
+              >
+                <div class="font-medium text-gray-900">{{ buku.judul }}</div>
+                <div class="text-sm text-gray-500">Peminjam: {{ buku.peminjaman?.[0]?.peminjam?.nama || 'N/A' }}</div>
+              </button>
+            </div>
+            <div
+              v-if="showBukuDropdown && searchBuku && filteredBuku.length === 0"
+              class="absolute z-10 mt-1 w-full rounded-lg border bg-white p-3 text-center text-sm text-gray-500"
+            >
+              Tidak ada hasil yang cocok
+            </div>
+          </div>
+          <p v-if="formKembali.errors.peminjaman_id" class="mt-1 text-sm text-red-600">{{ formKembali.errors.peminjaman_id }}</p>
+          <p v-if="!hasBorrowedBooks" class="mt-1 text-sm text-green-600">
+            Tidak ada buku yang sedang dipinjam.
+          </p>
+        </div>
+
+        <div>
+          <label for="tanggal_kembali" class="mb-2 block text-sm font-medium text-gray-700">
+            Tanggal Kembali <span class="text-red-500">*</span>
+          </label>
+          <input
+            id="tanggal_kembali"
+            v-model="formKembali.tanggal_kembali"
+            type="date"
+            class="w-full rounded-lg border px-4 py-2 focus:border-transparent focus:ring-2 focus:ring-blue-500"
+            :class="{ 'border-red-500': formKembali.errors.tanggal_kembali }"
+          />
+          <p v-if="formKembali.errors.tanggal_kembali" class="mt-1 text-sm text-red-600">{{ formKembali.errors.tanggal_kembali }}</p>
+        </div>
+      </div>
+
+      <div v-if="formKembali.errors.error" class="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-600">
+        {{ formKembali.errors.error }}
+      </div>
+
+      <div class="flex justify-end gap-3 border-t pt-4">
+        <button
+          type="button"
+          class="rounded-full border border-gray-300 px-5 py-2 text-gray-700 transition hover:bg-gray-50"
+          @click="closeKembaliModal"
+          :disabled="formKembali.processing"
+        >
+          Batal
+        </button>
+        <button
+          type="submit"
+          class="rounded-full bg-blue-600 px-5 py-2 text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+          :disabled="formKembali.processing || !hasBorrowedBooks"
+        >
+          <span v-if="formKembali.processing">Memproses...</span>
+          <span v-else>Catat Pengembalian</span>
+        </button>
+      </div>
+    </form>
+  </Modal>
 </template>
 
 <script setup>
 import { Head, Link, useForm } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import Modal from '@/components/Modal.vue';
+import AuthenticatedLayout from '@/layouts/AuthenticatedLayout.vue';
+
+defineOptions({
+  layout: AuthenticatedLayout
+});
 
 const props = defineProps({
   user: Object,
   bukuTersedia: Array,
   bukuDipinjam: Array,
-  users: Array,
+  users: Array
 });
 
-// Form for Peminjaman
+const getToday = () => new Date().toISOString().split('T')[0];
+
+const showPinjamModal = ref(false);
+const showKembaliModal = ref(false);
+
+const searchBukuPinjam = ref('');
+const showBukuPinjamDropdown = ref(false);
+
+const searchPeminjam = ref('');
+const showPeminjamDropdown = ref(false);
+
+const searchBuku = ref('');
+const showBukuDropdown = ref(false);
+
+const hasAvailableBooks = computed(() => (props.bukuTersedia || []).length > 0);
+const hasBorrowedBooks = computed(() => (props.bukuDipinjam || []).length > 0);
+const topBukuTersedia = computed(() => (props.bukuTersedia || []).slice(0, 5));
+const topBukuDipinjam = computed(() => (props.bukuDipinjam || []).slice(0, 5));
+
+const filteredBukuTersedia = computed(() => {
+  if (!searchBukuPinjam.value) {
+    return props.bukuTersedia || [];
+  }
+  const search = searchBukuPinjam.value.toLowerCase();
+  return (props.bukuTersedia || []).filter((buku) =>
+    buku.judul.toLowerCase().includes(search) ||
+    (buku.kategori || '').toLowerCase().includes(search)
+  );
+});
+
+const filteredUsers = computed(() => {
+  if (!searchPeminjam.value) {
+    return props.users || [];
+  }
+  const search = searchPeminjam.value.toLowerCase();
+  return (props.users || []).filter((user) =>
+    user.nama.toLowerCase().includes(search) ||
+    user.email.toLowerCase().includes(search)
+  );
+});
+
+const filteredBuku = computed(() => {
+  if (!searchBuku.value) {
+    return props.bukuDipinjam || [];
+  }
+  const search = searchBuku.value.toLowerCase();
+  return (props.bukuDipinjam || []).filter((buku) =>
+    buku.judul.toLowerCase().includes(search) ||
+    (buku.peminjaman?.[0]?.peminjam?.nama || '').toLowerCase().includes(search)
+  );
+});
+
 const formPinjam = useForm({
   buku_id: '',
   peminjam_id: '',
-  tanggal_pinjam: new Date().toISOString().split('T')[0], // Today's date
+  tanggal_pinjam: getToday()
 });
 
-// Form for Pengembalian
 const formKembali = useForm({
   peminjaman_id: '',
-  tanggal_kembali: new Date().toISOString().split('T')[0], // Today's date
+  tanggal_kembali: getToday()
+});
+
+const resetPinjamForm = () => {
+  formPinjam.reset();
+  formPinjam.clearErrors();
+  formPinjam.tanggal_pinjam = getToday();
+  searchBukuPinjam.value = '';
+  searchPeminjam.value = '';
+  showBukuPinjamDropdown.value = false;
+  showPeminjamDropdown.value = false;
+};
+
+const resetPengembalianForm = () => {
+  formKembali.reset();
+  formKembali.clearErrors();
+  formKembali.tanggal_kembali = getToday();
+  searchBuku.value = '';
+  showBukuDropdown.value = false;
+};
+
+const openPinjamModal = () => {
+  resetPinjamForm();
+  showPinjamModal.value = true;
+};
+
+const closePinjamModal = () => {
+  showPinjamModal.value = false;
+  resetPinjamForm();
+};
+
+const openKembaliModal = () => {
+  resetPengembalianForm();
+  showKembaliModal.value = true;
+};
+
+const closeKembaliModal = () => {
+  showKembaliModal.value = false;
+  resetPengembalianForm();
+};
+
+const selectBukuPinjam = (buku) => {
+  formPinjam.buku_id = buku.id;
+  searchBukuPinjam.value = buku.judul;
+  showBukuPinjamDropdown.value = false;
+};
+
+const selectPeminjam = (user) => {
+  formPinjam.peminjam_id = user.id;
+  searchPeminjam.value = user.nama;
+  showPeminjamDropdown.value = false;
+};
+
+const selectBuku = (buku) => {
+  formKembali.peminjaman_id = buku.peminjaman?.[0]?.id || '';
+  searchBuku.value = buku.judul;
+  showBukuDropdown.value = false;
+};
+
+const handleClickOutside = (event) => {
+  const bukuPinjamInput = document.getElementById('buku_pinjam');
+  const peminjamInput = document.getElementById('peminjam');
+  const bukuInput = document.getElementById('buku_kembali');
+
+  if (bukuPinjamInput && !bukuPinjamInput.contains(event.target) && !event.target.closest('.absolute')) {
+    showBukuPinjamDropdown.value = false;
+  }
+
+  if (peminjamInput && !peminjamInput.contains(event.target) && !event.target.closest('.absolute')) {
+    showPeminjamDropdown.value = false;
+  }
+
+  if (bukuInput && !bukuInput.contains(event.target) && !event.target.closest('.absolute')) {
+    showBukuDropdown.value = false;
+  }
+};
+
+onMounted(() => {
+  document.addEventListener('click', handleClickOutside);
+});
+
+onBeforeUnmount(() => {
+  document.removeEventListener('click', handleClickOutside);
 });
 
 const submitPeminjaman = () => {
   formPinjam.post('/admin/perpustakaan/pinjam', {
     preserveScroll: true,
     onSuccess: () => {
-      formPinjam.reset();
-      formPinjam.tanggal_pinjam = new Date().toISOString().split('T')[0];
+      closePinjamModal();
     }
   });
 };
@@ -262,8 +526,7 @@ const submitPengembalian = () => {
   formKembali.post('/admin/perpustakaan/kembalikan', {
     preserveScroll: true,
     onSuccess: () => {
-      formKembali.reset();
-      formKembali.tanggal_kembali = new Date().toISOString().split('T')[0];
+      closeKembaliModal();
     }
   });
 };

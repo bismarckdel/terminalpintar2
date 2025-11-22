@@ -32,7 +32,10 @@ class PerpustakaanController extends Controller
             $query->where('status', $request->status);
         }
         
-        $buku = $query->latest()->get();
+        // Get paginated buku with current borrower info
+        $buku = $query->with(['peminjaman' => function($q) {
+            $q->where('status', 'Dipinjam')->with('peminjam');
+        }])->latest()->paginate(10);
         
         // Get statistics (recalculated based on filtered results for accuracy)
         $stats = [
@@ -154,7 +157,11 @@ class PerpustakaanController extends Controller
                 ]);
             }
 
-            $buku->delete();
+            if (method_exists($buku, 'forceDelete')) {
+                $buku->forceDelete();
+            } else {
+                $buku->delete();
+            }
 
             return redirect()->route('admin.perpustakaan.index')
                 ->with('success', 'Buku berhasil dihapus!');
